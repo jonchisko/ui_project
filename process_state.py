@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import copy
 
+
+
 def get_mario(grayscale_image):
     #mario value
     mario = 107
