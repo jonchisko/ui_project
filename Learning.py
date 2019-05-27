@@ -68,15 +68,6 @@ class Learning:
 
 
         #### features from image
-        #enemies = self.enemies_present(current_state)
-        # right close
-        #features[3] = enemies[0]
-        # left close
-        #features[4] = enemies[1]
-        # below
-        #features[5] = enemies[2]
-        # present
-        #features[6] = enemies[3]
 
         # stuck
         features[5] = self.stuck(current_state)
@@ -104,20 +95,27 @@ class Learning:
         return features
 
 
-    """
-    def enemies_right_close(self, state):
-        pass
-    def enemies_left_close(self, state):
-        pass
-    def enemies_below(self, state):
-        pass
-    def enemies_present(self, state):
-        arr = [False, False, False, False]
-        arr[0] = self.enemies_right_close(state)
-        arr[1] = self.enemies_left_close(state)
-        arr[2] = self.enemies_below(state)
-        pass
-    """
+    def aroundMario(self, state):
+        # just select 5 rows nad 6 cols around hist bottom right pos
+        new_image = []
+        for row in state[self.mario_row-3:self.mario_row+2]:
+            new_image.append(row[self.mario_col-2:self.mario_col+4])
+        return new_image
+
+    def aroundMario2(self, state):
+        # get three rows: 2 tiles behind mario and 3 tiles in front of mario
+        new_image = []
+        # mario width
+        w = -1
+        for i in range(self.mario_col, -1, -1):
+            if state[self.mario_row][i] != Learning.MARIO:
+                w = i
+                break
+
+        for row in state[self.mario_row-1:self.mario_row+2]:
+            new_image.append(row[w-1:self.mario_col+4])
+        return new_image
+
 
     def stuck(self, state):
         if state[self.mario_row][self.mario_row+1] == Learning.OBSTACLE:
@@ -222,10 +220,34 @@ if __name__ == '__main__':
         print(e)
     # create features for state ar1
     print(feat.createFeatures(ar1, 2))
+    a = feat.aroundMario(ar1)
+    for row in a:
+        print(row)
+
+    print("mario2")
+    a = feat.aroundMario2(ar1)
+    for row in a:
+        print(row)
+
     for e in ar2:
         print(e)
     print(feat.createFeatures(ar2, 4))
+    a = feat.aroundMario(ar2)
+    for row in a:
+        print(row)
+    print("mario2")
+    a = feat.aroundMario2(ar2)
+    for row in a:
+        print(row)
+
     for e in ar3:
         print(e)
     print(feat.createFeatures(ar3, 1))
+    a = feat.aroundMario(ar3)
+    for row in a:
+        print(row)
+    print("mario2")
+    a = feat.aroundMario2(ar3)
+    for row in a:
+        print(row)
 
