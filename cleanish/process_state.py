@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import copy
+import time
 
 
 class Img2State:
@@ -17,24 +18,38 @@ class Img2State:
         self.__right_close = 2
         self.__left_close = 2
 
-    def transfrom(self, state):
-        return self.__createFeatures(self.__process(state))
+    def transfrom(self, state, raw = False, variant = 0):
+        if raw:
+            return Img2State.__process(state, variant=variant, mode=0)
+        else:
+            return Img2State.__createFeatures(Img2State.__process(state, variant=variant, mode=0))
 
 # Domen
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-    def __process(self, state, mode = 0):
+
+    def __process(state, variant=0, mode=0):
         if mode == 0:
-            state = state[...,::-1]
+            state = state[..., ::-1]
             img5 = cv2.cvtColor(state, cv2.COLOR_BGR2GRAY)
-            result = Img2State.__get_mario(img5)+Img2State.__get_floor(img5)+Img2State.__get_coinblocks(img5)+ \
-                     Img2State.__get_pipes(img5)+Img2State.__get_koopas(img5)+Img2State.__get_flag(img5)
-            return Img2State.__get_discrete_state(result)
+            result = Img2State.__get_mario(img5) + Img2State.__get_floor(img5) + Img2State.__get_coinblocks(img5) + \
+                     Img2State.__get_pipes(img5) + Img2State.__get_koopas(img5) + Img2State.__get_flag(img5)
+            if variant == 0:
+                return Img2State.__get_discrete_state(result)
+            if variant == 1:
+                return Img2State.__get_discrete_state2(result)
+            if variant == 2:
+                return Img2State.__get_discrete_state3(result)
         if mode == 1:
             img5 = cv2.cvtColor(state, cv2.COLOR_BGR2GRAY)
-            result = Img2State.__get_mario(img5)+Img2State.__get_floor(img5)+Img2State.__get_coinblocks(img5)+ \
-                     Img2State.__get_pipes(img5)+Img2State.__get_koopas(img5)+Img2State.__get_flag(img5)
-            Img2State.__show_grid(result)
-            return result
+            result = Img2State.__get_mario(img5) + Img2State.__get_floor(img5) + Img2State.__get_coinblocks(img5) + \
+                     Img2State.__get_pipes(img5) + Img2State.__get_koopas(img5) + Img2State.__get_flag(img5)
+            # show_grid(result)
+            if variant == 0:
+                return Img2State.__get_discrete_state(result)
+            if variant == 1:
+                return Img2State.__get_discrete_state2(result)
+            if variant == 2:
+                return Img2State.__get_discrete_state3(result)
 
     def __get_mario(grayscale_image):
         #mario value
@@ -237,6 +252,62 @@ class Img2State:
             matrikca.append(vrstica)
         return matrikca
 
+    # state revolves around mario
+    def __get_discrete_state2(state):
+        image_height = state.shape[0]
+        image_width = state.shape[1]
+        y, x = np.where(state == 250)
+        if y.size == 0:
+            return Img2State.__get_discrete_state(state)
+        up_x = x[0]
+        up_y = y[0]
+
+        down_x = x[-1]
+        down_y = y[-1]
+        cv2.rectangle(state, (up_x, up_y), (down_x, down_y), 165, 1)
+        m_width = 15
+        m_height = 15
+
+        coef_left = up_x // m_width
+
+        starting_x = up_x - (coef_left * m_width)
+
+        coef_up = down_y // m_height
+        starting_y = down_y - (coef_up * m_height)
+        matrikca = []
+        for i in range(starting_y, image_width, 15):
+            vrstica = []
+            for j in range(starting_x, image_height, 15):
+                square = state[i:i + 15, j:j + 15]
+
+                h, w = square.shape
+                if w and h:
+                    v = Img2State.__handle_square(square)
+                    vrstica.append(v)
+            if vrstica:
+                matrikca.append(vrstica)
+        return matrikca
+
+    def __get_discrete_state3(processed_state):
+        image_height = processed_state.shape[0]
+        image_width = processed_state.shape[1]
+        tile_height = 15
+        tile_width = 15
+        matrikca = []
+        for j in range(0, image_height, tile_height):
+            vrstica = []
+            for i in range(0, image_width, tile_width):
+                """upper_left = (i, j)
+                bottom_right = (i + tile_width, j + tile_height)"""
+
+                square = processed_state[j:j + tile_height, i:i + tile_width]
+                vrednost = Img2State.__handle_square(square)
+                vrstica.append(vrednost)
+            matrikca.append(vrstica)
+        return matrikca
+
+
+
     def __show_grid(processed_state):
         processed_state = copy.copy(processed_state)
         image_height = processed_state.shape[0]
@@ -313,7 +384,7 @@ class Img2State:
 
     def __stuck(self, state):
         try:
-            if state[self.__mario_row][self.__mario_row+1] == self.__OBSTACLE:
+            if state[self.__mario_row][self.__mario_col+1] == self.__OBSTACLE:
                 return True
         except:
             return False
@@ -360,8 +431,8 @@ class Img2State:
 
     def __obstacle_right_close(self, state):
         # straight right, is there an obstacle?
-        for i in range(self.__mario_col + 1, self.__n_col if self.__mario_col + 1 + self.__right_close >=
-                                                         self.__n_col else self.__mario_col + 1 + self.__right_close):
+        for i in range(self.__mario_col + 1, self.__n_col if (self.__mario_col + 1 + self.__right_close) >=
+                                                         self.__n_col else (self.__mario_col + 1 + self.__right_close)):
             if state[self.__mario_row][i] == self.__OBSTACLE:
                 return True
         return False
@@ -389,14 +460,33 @@ class Img2State:
         return False, False
 
     def __findMario(self, state):
-        last_row, last_col = -1, -1
-        for row in range(self.__n_row):
-            for col in range(self.__n_col):
-                if state[row][col] == self.__MARIO:
-                    # this is not that fast, faster would be to just check straight down, but w/e
-                    last_row, last_col = row, col
-        return last_row, last_col
+        def findRightBottom(state):
+            row = self.__n_row - 1
+            while row > 0:
+                col = self.__n_col - 1
+                while col > 0:
+                    if state[row][col] == self.__MARIO:
+                        return row, col
+                    col -= 1
+                row -= 1
 
+            return -1, -1
+
+        row, col = findRightBottom(state)
+
+        if (row, col) == (-1, -1):
+            return -1, -1
+
+        # Find the rest of mario
+        mario = [row]
+        for i in range(1, 3):
+            if state[row-i][col] == self.__MARIO:
+                mario.append(row-i)
+
+        if len(mario) == 3:
+            return row-1, col
+        else:
+            return row, col
 
 
 

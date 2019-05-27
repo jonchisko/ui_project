@@ -1,7 +1,7 @@
 import random
 import pickle
 from environment import Environment
-import time
+
 
 class Agent:
 
@@ -11,8 +11,8 @@ class Agent:
         self.alpha = alpha      # learning rate
         self.eps = eps          # exploration vs exploitation (eps = 0 => all exploitation, eps = 1 => all exploration
 
-
-        self.Q = {tuple(self.env.state):[0 for action in self.env.A]}
+        state = tuple([tuple(row) for row in self.env.state])
+        self.Q = {state:[0 for action in self.env.A]}
 
     def loadQ(self):
         file = open('Qtable', 'br')
@@ -27,8 +27,9 @@ class Agent:
     def resetGame(self):
         self.env.reset()
 
-        if tuple(self.env.state) not in self.Q.keys():
-            self.Q[tuple(self.env.state)] = [0 for action in self.env.A]
+        state = tuple([tuple(row) for row in self.env.state])
+        if state not in self.Q.keys():
+            self.Q[state] = [0 for action in self.env.A]
 
     def learnOneEpoch(self):
         def collectReward():
@@ -38,7 +39,7 @@ class Agent:
 
         while not done:
 
-            state = tuple(self.env.state)
+            state = tuple([tuple(row) for row in self.env.state])
 
             if random.uniform(0, 1) < self.eps:
                 # Explore
@@ -60,7 +61,7 @@ class Agent:
             done = self.env.step(action)
 
             oldState = state
-            state = tuple(self.env.state)
+            state = tuple([tuple(row) for row in self.env.state])
 
             if state not in self.Q.keys():
                 self.Q[state] = [0 for action in self.env.A]
@@ -86,7 +87,7 @@ class Agent:
         self.eps = eps
 
     def getState(self):
-        return self.env.state
+        return tuple([tuple(row) for row in self.env.state])
 
     def setState(self, state:list):
         self.env.state = state
@@ -100,20 +101,29 @@ class Agent:
             print(i)
 
 if __name__ == '__main__':
-    env = Environment(verbose = True)
-    mario = Agent(env, 0.95, 0.05, 0.01)
+    # verbose: if True then display will be shown (might slow down learning)
+    env = Environment(verbose = True, raw=True, variant=1)
+    mario = Agent(env, 0.95, 0.05, 0.05)
 
     try:
          mario.loadQ()
     except:
         pass
 
-    #mario.perform()
-
-    while True:
+    for i in range(500):
         mario.learn(3)
         mario.saveQ()
 
+    mario.eps = 0.02
+
+    for i in range(500):
+        mario.learn(3)
+        mario.saveQ()
+
+    mario.eps = 0.01
+    while True:
+        mario.learn(3)
+        mario.saveQ()
 
 
     # Remove penalty for moving back / Write your own reward function

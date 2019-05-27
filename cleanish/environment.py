@@ -9,11 +9,13 @@ class Environment:
 
     actionMap = {0: 'NOOP', 1: 'Right', 2: 'Right-Jump', 3: 'Right-Sprint', 4: 'Right-Jump-Sprint', 5: 'Jump', 6: 'Left'}
 
-    def __init__(self, rows = 19, columns = 16, verbose = True):
+    def __init__(self, rows = 19, columns = 16, verbose = True, raw = True, variant = 1):
         self.verbose = verbose
+        self.raw = raw
+        self.variant = variant
         self.img2state = Img2State(rows = 19, columns = 16)
         self.game = BinarySpaceToDiscreteSpaceEnv(gym_super_mario_bros.make('SuperMarioBros-v3'), SIMPLE_MOVEMENT)
-        self.state = self.img2state.transfrom(self.game.reset())
+        self.state = self.img2state.transfrom(self.game.reset(), raw=self.raw, variant=self.variant)
         self.reward = 0
 
         # Actions
@@ -26,7 +28,7 @@ class Environment:
             raise Exception('Wrong Action...')
 
         state, self.reward, done, info = self.game.step(action)
-        self.state = self.img2state.transfrom(state)
+        self.state = self.img2state.transfrom(state, raw=self.raw, variant=self.variant)
 
         if done and self.state[8]:
             self.reward = 100
@@ -41,5 +43,5 @@ class Environment:
         return done
 
     def reset(self):
-        self.state = self.img2state.transfrom(self.game.reset())
+        self.state = self.img2state.transfrom(self.game.reset(), raw=self.raw, variant=self.variant)
         self.reward = 0
