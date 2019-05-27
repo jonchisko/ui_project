@@ -99,17 +99,23 @@ class Agent:
             print(i)
 
 if __name__ == '__main__':
-    env = Environment()
-    mario = Agent(env, 0.9, 0.1, 0.3)
+    env = Environment(verbose = True)
+    mario = Agent(env, 0.95, 0.05, 0.01)
 
     try:
          mario.loadQ()
     except:
         pass
 
+    #mario.perform()
+
     while True:
-        mario.learn(10)
+        mario.learn(3)
         mario.saveQ()
 
-    mario.perform()
+
+
+    # Remove penalty for moving back / Write your own reward function
+    # Introduce compound actions
+    # Put back last action into state representation (as Jon did originally (stran sem dal tisto..))
 
